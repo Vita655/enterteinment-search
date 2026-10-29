@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entertainment Search</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Ctext x='32' y='47' text-anchor='middle' font-family='Georgia,serif' font-size='48' font-weight='900' fill='%23facc15'%3EE%3C/text%3E%3C/svg%3E">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                        }
+                    },
+                    fontFamily: {
+                        serifLogo: ['"Anthropic Serif"', 'Georgia', 'Merriweather', 'serif'],
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Custom CSS for Embedded Google CSE container styling -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        /* Styling for embedded Google CSE when active */
+        .gsc-control-cse {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            font-family: inherit !important;
+        }
+        .gsc-search-button-v2 {
+            background-color: #eab308 !important;
+            border-radius: 0.5rem !important;
+        }
+        .gsc-webResult.gsc-result, .gsc-results .gsc-imageResult {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 12px 0 !important;
+        }
+        .gs-title, .gs-title * {
+            color: #2563eb !important;
+            text-decoration: none !important;
+        }
+        .dark .gs-title, .dark .gs-title * {
+            color: #60a5fa !important;
+        }
+        .gs-title:hover {
+            text-decoration: underline !important;
+        }
+        .gs-snippet {
+            color: #4b5563 !important;
+        }
+        .dark .gs-snippet {
+            color: #9ca3af !important;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
+
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 gap-4">
+                
+                <!-- Logo -->
+                <div class="flex items-center space-x-3 shrink-0 cursor-pointer" onclick="resetToHome()">
+                    <div class="w-10 h-10 rounded-xl bg-slate-900 dark:bg-slate-800 flex items-center justify-center shadow-md border border-brand-500/30 group transition-transform hover:scale-105">
+                        <span class="font-serifLogo text-brand-400 text-2xl font-black tracking-tighter select-none drop-shadow-[0_2px_4px_rgba(234,179,8,0.4)]">E</span>
+                    </div>
+                    <span class="font-bold text-lg sm:text-xl tracking-tight hidden sm:inline-block">
+                        <span class="text-slate-900 dark:text-white">Entertainment</span>
+                        <span class="text-brand-500 font-normal">Search</span>
+                    </span>
+                </div>
+
+                <!-- Main Search Bar Header Container (shown on results view or widescreen) -->
+                <div id="headerSearchContainer" class="flex-1 max-w-2xl mx-2 hidden sm:block">
+                    <form id="headerSearchForm" onsubmit="handleSearchSubmit(event)" class="relative flex items-center">
+                        <input 
+                            type="text" 
+                            id="headerSearchInput"
+                            placeholder="Search movies, games, videos, books..." 
+                            class="w-full pl-11 pr-24 py-2.5 rounded-full bg-gray-100 dark:bg-slate-800/90 text-slate-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 border border-transparent focus:border-brand-500 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-sm transition-all shadow-inner"
+                        />
+                        <i data-lucide="search" class="w-4 h-4 absolute left-4 text-gray-400"></i>
+                        <button type="button" id="headerClearBtn" onclick="clearSearch()" class="hidden absolute right-12 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                        <button type="submit" class="absolute right-1.5 p-1.5 bg-brand-500 hover:bg-brand-600 text-slate-950 font-medium rounded-full transition-colors shadow-sm">
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right Header Actions -->
+                <div class="flex items-center space-x-2 shrink-0">
+                    <!-- Dark Mode Toggle -->
+                    <button id="themeToggleBtn" onclick="toggleDarkMode()" title="Toggle Dark Mode" class="p-2 rounded-lg text-gray-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">
+                        <i data-lucide="moon" id="moonIcon" class="w-5 h-5"></i>
+                        <i data-lucide="sun" id="sunIcon" class="w-5 h-5 hidden"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation Bar -->
+            <nav id="tabsNav" class="flex space-x-1 overflow-x-auto scrollbar-none py-2 border-t border-gray-100 dark:border-slate-800/60 text-xs sm:text-sm font-medium">
+                <button onclick="switchTab('All')" data-tab="All" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 font-semibold">
+                    <i data-lucide="globe" class="w-4 h-4"></i>
+                    All
+                </button>
+                <button onclick="switchTab('Websites')" data-tab="Websites" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="layout" class="w-4 h-4"></i>
+                    Websites
+                </button>
+                <button onclick="switchTab('Images')" data-tab="Images" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="image" class="w-4 h-4"></i>
+                    Images
+                </button>
+                <button onclick="switchTab('Videos')" data-tab="Videos" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="video" class="w-4 h-4"></i>
+                    Videos
+                </button>
+                <button onclick="switchTab('Forums')" data-tab="Forums" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="messages-square" class="w-4 h-4"></i>
+                    Forums
+                </button>
+                <button onclick="switchTab('News')" data-tab="News" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="newspaper" class="w-4 h-4"></i>
+                    News
+                </button>
+                <button onclick="switchTab('Books')" data-tab="Books" class="tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    Books
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Body Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- HOME HERO VIEW (shown initially or when query is empty) -->
+        <div id="homeHeroView" class="flex flex-col items-center justify-center min-h-[60vh] text-center max-w-2xl mx-auto py-8">
+            <!-- Big Stylized E Logo -->
+            <div class="relative mb-6 group cursor-pointer" onclick="focusMainInput()">
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-slate-900 dark:bg-slate-900 flex items-center justify-center shadow-xl border-2 border-brand-500/40 relative z-10 transition-transform duration-300 group-hover:scale-105">
+                    <span class="font-serifLogo text-brand-400 text-6xl sm:text-7xl font-black select-none drop-shadow-[0_4px_12px_rgba(234,179,8,0.5)]">E</span>
+                </div>
+                <div class="absolute -inset-1 bg-gradient-to-r from-brand-500 to-amber-300 rounded-3xl blur-lg opacity-40 group-hover:opacity-70 transition duration-300"></div>
+            </div>
+
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
+                <span class="text-slate-900 dark:text-white">Entertainment</span>
+                <span class="text-brand-500">Search</span>
+            </h1>
+            <p class="text-gray-500 dark:text-slate-400 text-sm sm:text-base mb-8 max-w-md">
+                Discover movies, gaming trends, music, articles, forums, news & books without leaving the hub.
+            </p>
+
+            <!-- Main Home Search Bar -->
+            <form id="homeSearchForm" onsubmit="handleSearchSubmit(event)" class="w-full relative group">
+                <div class="relative flex items-center shadow-lg rounded-full overflow-hidden border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-brand-500 transition-all">
+                    <i data-lucide="search" class="w-5 h-5 absolute left-5 text-gray-400"></i>
+                    <input 
+                        type="text" 
+                        id="homeSearchInput"
+                        placeholder="Search anything in entertainment..." 
+                        class="w-full pl-14 pr-28 py-4 bg-transparent text-slate-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 focus:outline-none text-base"
+                        autocomplete="off"
+                    />
+                    <button type="submit" class="absolute right-2 px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-slate-950 font-semibold rounded-full transition-colors flex items-center gap-2 shadow">
+                        <span>Search</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Quick Filter Chips -->
+            <div class="flex flex-wrap items-center justify-center gap-2 mt-6">
+                <span class="text-xs text-gray-400 font-medium mr-1">Try searching:</span>
+                <button onclick="quickSearch('Cyberpunk 2077 update')" class="px-3 py-1 rounded-full text-xs bg-gray-200/70 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-brand-500 hover:text-slate-950 transition-colors">🎮 Cyberpunk 2077</button>
+                <button onclick="quickSearch('Dune Part Two review')" class="px-3 py-1 rounded-full text-xs bg-gray-200/70 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-brand-500 hover:text-slate-950 transition-colors">🎬 Dune Part Two</button>
+                <button onclick="quickSearch('Top Anime 2026')" class="px-3 py-1 rounded-full text-xs bg-gray-200/70 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-brand-500 hover:text-slate-950 transition-colors">🍿 Top Anime</button>
+                <button onclick="quickSearch('Sci-Fi Books recommendations')" class="px-3 py-1 rounded-full text-xs bg-gray-200/70 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-brand-500 hover:text-slate-950 transition-colors">📚 Sci-Fi Books</button>
+            </div>
+        </div>
+
+        <!-- SEARCH RESULTS CONTAINER -->
+        <div id="resultsView" class="hidden min-h-[50vh]">
+            
+            <!-- Category Filter Info Bar -->
+            <div class="flex flex-wrap items-center justify-between pb-4 mb-4 border-b border-gray-200 dark:border-slate-800 text-sm text-gray-500 dark:text-slate-400 gap-2">
+                <div class="flex items-center gap-2">
+                    <span>Showing results for:</span>
+                    <span id="currentQueryLabel" class="font-bold text-slate-900 dark:text-white italic"></span>
+                    <span id="activeCategoryBadge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-400">All</span>
+                </div>
+            </div>
+
+            <!-- In-Page Rendered Search Results -->
+            <div id="customResultsContainer" class="space-y-8">
+                <!-- Search results sections will be injected dynamically here -->
+            </div>
+
+            <!-- No Results / Loading Indicator -->
+            <div id="loadingSpinner" class="hidden py-16 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-brand-500 border-t-transparent"></div>
+                <p class="mt-3 text-sm text-gray-500 dark:text-slate-400">Generating AI Overview & search results...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Image Lightbox Modal -->
+    <div id="imageModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="closeImageModal(event)">
+        <div class="relative max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 overflow-hidden shadow-2xl flex flex-col items-center">
+            <button onclick="closeImageModal()" class="absolute top-3 right-3 p-2 text-gray-400 hover:text-white bg-slate-800/80 rounded-full z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="imageModalContent" class="w-full flex items-center justify-center py-4">
+                <!-- Image content injected here -->
+            </div>
+            <div id="imageModalTitle" class="text-sm font-semibold text-slate-200 mt-2 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="videoModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="closeVideoModal(event)">
+        <div class="relative max-w-3xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-2 sm:p-4 shadow-2xl flex flex-col">
+            <div class="flex items-center justify-between px-2 pb-2">
+                <span id="videoModalTitle" class="text-sm font-bold text-white truncate pr-4"></span>
+                <button onclick="closeVideoModal()" class="p-1.5 text-gray-400 hover:text-white bg-slate-800 rounded-full shrink-0">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+                <iframe id="videoIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // State Management
+        let currentTab = 'All';
+        let currentQuery = '';
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initTheme();
+            
+            // Input sync
+            const homeInput = document.getElementById('homeSearchInput');
+            const headerInput = document.getElementById('headerSearchInput');
+            
+            homeInput.addEventListener('input', (e) => {
+                headerInput.value = e.target.value;
+            });
+            headerInput.addEventListener('input', (e) => {
+                homeInput.value = e.target.value;
+                document.getElementById('headerClearBtn').classList.toggle('hidden', !e.target.value);
+            });
+        });
+
+        // Dark Mode Logic
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                document.getElementById('moonIcon').classList.add('hidden');
+                document.getElementById('sunIcon').classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.getElementById('moonIcon').classList.remove('hidden');
+                document.getElementById('sunIcon').classList.add('hidden');
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.theme = isDark ? 'dark' : 'light';
+            document.getElementById('moonIcon').classList.toggle('hidden', isDark);
+            document.getElementById('sunIcon').classList.toggle('hidden', !isDark);
+        }
+
+        function focusMainInput() {
+            document.getElementById('homeSearchInput').focus();
+        }
+
+        function resetToHome() {
+            currentQuery = '';
+            document.getElementById('homeSearchInput').value = '';
+            document.getElementById('headerSearchInput').value = '';
+            document.getElementById('homeHeroView').classList.remove('hidden');
+            document.getElementById('resultsView').classList.add('hidden');
+            document.getElementById('headerSearchContainer').classList.add('sm:hidden');
+        }
+
+        function quickSearch(query) {
+            document.getElementById('homeSearchInput').value = query;
+            document.getElementById('headerSearchInput').value = query;
+            performSearch(query);
+        }
+
+        function clearSearch() {
+            document.getElementById('headerSearchInput').value = '';
+            document.getElementById('homeSearchInput').value = '';
+            document.getElementById('headerClearBtn').classList.add('hidden');
+            document.getElementById('headerSearchInput').focus();
+        }
+
+        function handleSearchSubmit(e) {
+            e.preventDefault();
+            const query = document.getElementById('headerSearchInput').value.trim() || document.getElementById('homeSearchInput').value.trim();
+            if (query) {
+                performSearch(query);
+            }
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update Active Tab Styling
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.className = "tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-500/10 font-semibold";
+                } else {
+                    btn.className = "tab-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-all text-gray-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-slate-800";
+                }
+            });
+
+            document.getElementById('activeCategoryBadge').innerText = tabName;
+
+            if (currentQuery) {
+                executeSearch(currentQuery);
+            }
+        }
+
+        function performSearch(query) {
+            currentQuery = query;
+            document.getElementById('homeHeroView').classList.add('hidden');
+            document.getElementById('resultsView').classList.remove('hidden');
+            document.getElementById('headerSearchContainer').classList.remove('sm:hidden');
+            document.getElementById('currentQueryLabel').innerText = `"${query}"`;
+            
+            executeSearch(query);
+        }
+
+        // Search Execution Engine
+        function executeSearch(query) {
+            const container = document.getElementById('customResultsContainer');
+            const spinner = document.getElementById('loadingSpinner');
+
+            // Show Spinner
+            container.innerHTML = '';
+            spinner.classList.remove('hidden');
+
+            setTimeout(() => {
+                spinner.classList.add('hidden');
+                renderResults(query, container);
+            }, 300);
+        }
+
+        // SVG Icon Definition for the Globe Icon shown in user's image
+        const GLOBE_SVG_ICON = `
+            <svg class="w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                <path d="M2 12h20"></path>
+            </svg>
+        `;
+
+        // Render Search Results & AI Overview
+        function renderResults(query, container) {
+            container.innerHTML = '';
+
+            // Render Top Original Sites Bar first
+            renderTopOriginalSites(query, container);
+
+            // AI Overview Box
+            renderAIOverview(query, container);
+
+            // Strict Stacked Rendering for "All" Tab
+            if (currentTab === 'All') {
+                renderAllStackedTab(query, container);
+            } else if (currentTab === 'Websites') {
+                renderAllWebsitesSection(query, container);
+            } else if (currentTab === 'Images') {
+                renderImagesSection(query, container);
+            } else if (currentTab === 'Videos') {
+                renderVideosSection(query, container);
+            } else if (currentTab === 'Forums') {
+                renderForumsSection(query, container);
+            } else if (currentTab === 'News') {
+                renderNewsSection(query, container);
+            } else if (currentTab === 'Books') {
+                renderBooksSection(query, container);
+            }
+
+            lucide.createIcons();
+        }
+
+        // Top Original Sites / Shortcuts Section with Globe & Real Favicons
+        function renderTopOriginalSites(query, container) {
+            const encoded = encodeURIComponent(query);
+            
+            const originalSites = [
+                {
+                    name: "YouTube",
+                    domain: "youtube.com",
+                    url: `https://www.youtube.com/results?search_query=${encoded}`,
+                    desc: "Watch trailers, reviews & clips"
+                },
+                {
+                    name: "Wikipedia",
+                    domain: "wikipedia.org",
+                    url: `https://en.wikipedia.org/wiki/${encoded}`,
+                    desc: "Official encyclopedic article"
+                },
+                {
+                    name: "IMDb",
+                    domain: "imdb.com",
+                    url: `https://www.imdb.com/find?q=${encoded}`,
+                    desc: "Cast, plot, ratings & trivia"
+                },
+                {
+                    name: "Reddit",
+                    domain: "reddit.com",
+                    url: `https://www.reddit.com/search/?q=${encoded}`,
+                    desc: "Community discussions & theories"
+                }
+            ];
+
+            const section = document.createElement('div');
+            section.className = "mb-6";
+            
+            let sitesHtml = `
+                <div class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2.5 flex items-center gap-1.5">
+                    ${GLOBE_SVG_ICON}
+                    Official & Original Destinations
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            `;
+
+            originalSites.forEach(site => {
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${site.domain}&sz=64`;
+                sitesHtml += `
+                    <a href="${site.url}" target="_blank" rel="noopener" class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 hover:border-brand-500/80 hover:shadow-md transition-all flex items-center gap-3 group">
+                        <div class="w-8 h-8 rounded-lg shrink-0 bg-gray-100 dark:bg-slate-800 p-1 border border-gray-200 dark:border-slate-700 flex items-center justify-center">
+                            <img src="${faviconUrl}" alt="${site.name}" class="w-5 h-5 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                            <span class="hidden">${GLOBE_SVG_ICON}</span>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-brand-500 flex items-center justify-between">
+                                <span class="truncate">${site.name}</span>
+                                <i data-lucide="external-link" class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-brand-500 shrink-0"></i>
+                            </div>
+                            <span class="text-[10px] text-gray-400 dark:text-slate-500 truncate block flex items-center gap-1">
+                                ${GLOBE_SVG_ICON} ${site.domain}
+                            </span>
+                        </div>
+                    </a>
+                `;
+            });
+
+            sitesHtml += `</div>`;
+            section.innerHTML = sitesHtml;
+            container.appendChild(section);
+        }
+
+        // AI Overview Generator
+        function renderAIOverview(query, container) {
+            const aiBox = document.createElement('div');
+            aiBox.className = "p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent border border-brand-500/30 dark:border-brand-500/20 shadow-md relative overflow-hidden";
+            
+            aiBox.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="p-1.5 rounded-lg bg-brand-500 text-slate-950 font-bold flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        </span>
+                        <h3 class="font-bold text-sm sm:text-base text-slate-900 dark:text-white flex items-center gap-2">
+                            AI Overview
+                            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-700 dark:text-brand-300">Generated for ${escapeHtml(query)}</span>
+                        </h3>
+                    </div>
+                </div>
+
+                <div class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed space-y-2">
+                    <p>Here is an AI-curated entertainment overview regarding <strong>${escapeHtml(query)}</strong> based on live web highlights, media coverage, and discussion trends:</p>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600 dark:text-slate-300">
+                        <li><strong>Core Topic:</strong> "${escapeHtml(query)}" spans across major media formats including trailers, reviews, and community threads.</li>
+                        <li><strong>Key Highlight:</strong> Highly active across primary portals like YouTube, Wikipedia, IMDb, and Reddit.</li>
+                        <li><strong>Quick Takeaway:</strong> Explore official releases, community theories, and high-resolution media directly in the sections below.</li>
+                    </ul>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-brand-500/15 flex flex-wrap items-center gap-2 text-xs">
+                    <span class="text-gray-400 font-medium flex items-center gap-1">${GLOBE_SVG_ICON} Sources:</span>
+                    <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(query)}" target="_blank" class="px-2.5 py-1 rounded-md bg-white/80 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:text-brand-500 flex items-center gap-1.5 text-[11px]">
+                        ${GLOBE_SVG_ICON} YouTube
+                    </a>
+                    <a href="https://en.wikipedia.org/wiki/${encodeURIComponent(query)}" target="_blank" class="px-2.5 py-1 rounded-md bg-white/80 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:text-brand-500 flex items-center gap-1.5 text-[11px]">
+                        ${GLOBE_SVG_ICON} Wikipedia
+                    </a>
+                    <a href="https://www.imdb.com/find?q=${encodeURIComponent(query)}" target="_blank" class="px-2.5 py-1 rounded-md bg-white/80 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:text-brand-500 flex items-center gap-1.5 text-[11px]">
+                        ${GLOBE_SVG_ICON} IMDb
+                    </a>
+                </div>
+            `;
+
+            container.appendChild(aiBox);
+        }
+
+        // Web Search Results with Domain Globe Icon
+        function renderAllWebsitesSection(query, container) {
+            const wrapper = document.createElement('div');
+            wrapper.className = "space-y-4";
+
+            const results = [
+                {
+                    title: `${query} - Watch Official Content & Videos on YouTube`,
+                    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+                    site: "youtube.com",
+                    domain: "youtube.com",
+                    snippet: `Watch trailers, official teasers, music videos, reviews, and gameplay streams for ${query} directly on YouTube.`
+                },
+                {
+                    title: `${query} - Official Overview & Information`,
+                    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(query)}`,
+                    site: "wikipedia.org",
+                    domain: "wikipedia.org",
+                    snippet: `Complete background, history, releases, cast, development, and critical reception regarding ${query}. Updated regularly by community editors.`
+                },
+                {
+                    title: `${query} - IMDb Ratings, Cast & Trailers`,
+                    url: `https://www.imdb.com/find?q=${encodeURIComponent(query)}`,
+                    site: "imdb.com",
+                    domain: "imdb.com",
+                    snippet: `Cast, crew, user reviews, trivia, quotes, photos, video trailers, and soundtrack details for ${query}.`
+                },
+                {
+                    title: `Latest News & Features on ${query} - IGN / Metacritic`,
+                    url: `https://www.ign.com/search?q=${encodeURIComponent(query)}`,
+                    site: "ign.com",
+                    domain: "ign.com",
+                    snippet: `Comprehensive coverage, ratings, guides, news alerts, and expert reviews on ${query}.`
+                }
+            ];
+
+            results.forEach(res => {
+                const faviconUrl = `https://www.google.com/s2/favicons?domain=${res.domain}&sz=32`;
+                const card = document.createElement('div');
+                card.className = "p-4 sm:p-5 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 shadow-sm hover:border-brand-500/50 transition-all";
+                card.innerHTML = `
+                    <div class="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-2 mb-1.5">
+                        <span class="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
+                            ${GLOBE_SVG_ICON}
+                            ${res.site}
+                        </span>
+                        <span>&bull;</span>
+                        <span class="truncate">${res.url}</span>
+                    </div>
+                    <a href="${res.url}" target="_blank" rel="noopener" class="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5">
+                        ${res.title}
+                        <i data-lucide="external-link" class="w-3.5 h-3.5 opacity-60"></i>
+                    </a>
+                    <p class="text-xs sm:text-sm text-gray-600 dark:text-slate-300 mt-2 leading-relaxed">
+                        ${res.snippet}
+                    </p>
+                `;
+                wrapper.appendChild(card);
+            });
+
+            container.appendChild(wrapper);
+        }
+
+        // Render Combined "All" Tab
+        function renderAllStackedTab(query, container) {
+            // Section 1: Websites
+            const webHeading = document.createElement('h3');
+            webHeading.className = "text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mb-2 flex items-center gap-1.5";
+            webHeading.innerHTML = `${GLOBE_SVG_ICON} Web Results`;
+            container.appendChild(webHeading);
+            renderAllWebsitesSection(query, container);
+
+            // Section 2: Images
+            const imgHeading = document.createElement('h3');
+            imgHeading.className = "text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mt-8 mb-2 flex items-center gap-1.5";
+            imgHeading.innerHTML = `<i data-lucide="image" class="w-4 h-4 text-brand-500"></i> Image Gallery`;
+            container.appendChild(imgHeading);
+            renderImagesSection(query, container, 4);
+
+            // Section 3: Videos
+            const vidHeading = document.createElement('h3');
+            vidHeading.className = "text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mt-8 mb-2 flex items-center gap-1.5";
+            vidHeading.innerHTML = `<i data-lucide="video" class="w-4 h-4 text-brand-500"></i> Video Clips & Trailers`;
+            container.appendChild(vidHeading);
+            renderVideosSection(query, container);
+
+            // Section 4: Forums, News, Books
+            const extraHeading = document.createElement('h3');
+            extraHeading.className = "text-sm font-bold uppercase tracking-wider text-gray-500 dark:text-slate-400 mt-8 mb-2 flex items-center gap-1.5";
+            extraHeading.innerHTML = `<i data-lucide="layers" class="w-4 h-4 text-brand-500"></i> Community & News Coverage`;
+            container.appendChild(extraHeading);
+
+            const extraGrid = document.createElement('div');
+            extraGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-4";
+            
+            const col1 = document.createElement('div');
+            col1.className = "space-y-3";
+            renderForumsSection(query, col1);
+
+            const col2 = document.createElement('div');
+            col2.className = "space-y-3";
+            renderNewsSection(query, col2);
+
+            const col3 = document.createElement('div');
+            col3.className = "space-y-3";
+            renderBooksSection(query, col3);
+
+            extraGrid.appendChild(col1);
+            extraGrid.appendChild(col2);
+            extraGrid.appendChild(col3);
+            container.appendChild(extraGrid);
+        }
+
+        function renderImagesSection(query, container, count = 8) {
+            const grid = document.createElement('div');
+            grid.className = "grid grid-cols-2 sm:grid-cols-4 gap-3";
+
+            for(let i = 1; i <= count; i++) {
+                const imgCard = document.createElement('div');
+                imgCard.className = "group relative rounded-xl overflow-hidden bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm aspect-video sm:aspect-square flex flex-col justify-end p-3 cursor-pointer";
+                
+                imgCard.onclick = () => openImageModal(`${query} Visual ${i}`, `https://source.unsplash.com/800x800/?entertainment,${encodeURIComponent(query)}`);
+
+                imgCard.innerHTML = `
+                    <div class="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-slate-800 to-slate-900 flex items-center justify-center text-slate-700 group-hover:scale-105 transition-transform duration-300">
+                        <i data-lucide="image" class="w-10 h-10 text-brand-500/40"></i>
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-80"></div>
+                    <div class="relative z-10 text-white">
+                        <p class="text-xs font-semibold line-clamp-1">${query} Artwork ${i}</p>
+                        <p class="text-[10px] text-brand-400 flex items-center gap-1 mt-0.5"><i data-lucide="maximize-2" class="w-3 h-3"></i> Expand Image</p>
+                    </div>
+                `;
+                grid.appendChild(imgCard);
+            }
+            container.appendChild(grid);
+        }
+
+        function renderVideosSection(query, container) {
+            const list = document.createElement('div');
+            list.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+
+            const vids = [
+                { title: `${query} - Official Trailer & Teaser`, source: "YouTube", duration: "2:45", id: "dQw4w9WgXcQ" },
+                { title: `${query} - Full Review & Deep Breakdown`, source: "YouTube", duration: "14:20", id: "dQw4w9WgXcQ" }
+            ];
+
+            vids.forEach(v => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 flex gap-4 items-center hover:border-brand-500 transition-all cursor-pointer";
+                card.onclick = () => openVideoModal(v.title, v.id);
+
+                card.innerHTML = `
+                    <div class="w-28 h-20 bg-slate-900 rounded-lg flex items-center justify-center shrink-0 relative overflow-hidden group">
+                        <i data-lucide="play-circle" class="w-8 h-8 text-brand-400 z-10 group-hover:scale-125 transition-transform"></i>
+                        <span class="absolute bottom-1 right-1 text-[10px] bg-slate-950/80 text-white px-1 rounded">${v.duration}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">${v.source}</span>
+                        <div class="block text-sm font-bold text-slate-900 dark:text-white line-clamp-2 mt-0.5">
+                            ${v.title}
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                            <i data-lucide="play" class="w-3 h-3 fill-current text-brand-500"></i> Watch in Player
+                        </p>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            container.appendChild(list);
+        }
+
+        function renderForumsSection(query, container) {
+            const threads = [
+                { title: `[Megathread] What are your thoughts on ${query}?`, forum: "r/entertainment", replies: "1.2k comments" },
+                { title: `${query} official speculation and community theories`, forum: "Reddit / FanForums", replies: "512 comments" }
+            ];
+
+            threads.forEach(t => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 flex items-start gap-3 hover:border-brand-500/50 transition-all";
+                card.innerHTML = `
+                    <div class="p-2 rounded-lg bg-orange-500/10 text-orange-500 shrink-0">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[11px] font-semibold text-gray-400 truncate block">${t.forum} &bull; ${t.replies}</span>
+                        <a href="https://www.reddit.com/search/?q=${encodeURIComponent(query)}" target="_blank" class="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:underline mt-0.5 line-clamp-2">
+                            ${t.title}
+                        </a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderNewsSection(query, container) {
+            const newsItems = [
+                { title: `Major Updates & Press Release Announced for ${query}`, time: "2h ago" },
+                { title: `Critical Reaction and Fan Response to ${query}`, time: "5h ago" }
+            ];
+
+            newsItems.forEach(n => {
+                const card = document.createElement('div');
+                card.className = "p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 space-y-1 hover:border-brand-500/50 transition-all";
+                card.innerHTML = `
+                    <div class="flex items-center gap-1.5 text-[10px] text-brand-600 dark:text-brand-400 font-semibold">
+                        <span>NEWS</span>
+                        <span>&bull;</span>
+                        <span class="text-gray-400 font-normal">${n.time}</span>
+                    </div>
+                    <a href="https://news.google.com/search?q=${encodeURIComponent(query)}" target="_blank" class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white hover:underline block line-clamp-2">
+                        ${n.title}
+                    </a>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderBooksSection(query, container) {
+            const books = [
+                { title: `The Art & Lore of ${query}`, author: "Official Companion Archive", rating: "4.8" },
+                { title: `${query}: The Extended Novel`, author: "Featured Edition", rating: "4.6" }
+            ];
+
+            books.forEach(b => {
+                const card = document.createElement('div');
+                card.className = "p-3 bg-white dark:bg-slate-900 rounded-xl border border-gray-200 dark:border-slate-800 flex gap-3 items-center hover:border-brand-500/50 transition-all";
+                card.innerHTML = `
+                    <div class="w-10 h-12 bg-brand-500/20 border border-brand-500/30 rounded flex items-center justify-center text-brand-600 dark:text-brand-400 shrink-0">
+                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <a href="https://www.google.com/search?tbm=bks&q=${encodeURIComponent(query)}" target="_blank" class="font-bold text-xs sm:text-sm text-slate-900 dark:text-white hover:underline truncate block">
+                            ${b.title}
+                        </a>
+                        <p class="text-[11px] text-gray-500 dark:text-slate-400 truncate">${b.author}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Modal Helpers for In-Page Experience
+        function openImageModal(title, src) {
+            document.getElementById('imageModalTitle').innerText = title;
+            document.getElementById('imageModalContent').innerHTML = `
+                <div class="w-full max-h-[70vh] rounded-xl bg-slate-950 flex items-center justify-center p-8 border border-slate-800 text-slate-500">
+                    <div class="text-center">
+                        <i data-lucide="image" class="w-16 h-16 text-brand-400 mx-auto mb-2"></i>
+                        <p class="text-sm font-medium text-slate-300">${title}</p>
+                        <p class="text-xs text-slate-500 mt-1">High Resolution Entertainment Asset</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('imageModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeImageModal(e) {
+            if (!e || e.target.id === 'imageModal' || e.currentTarget.tagName === 'BUTTON') {
+                document.getElementById('imageModal').classList.add('hidden');
+            }
+        }
+
+        function openVideoModal(title, videoId) {
+            document.getElementById('videoModalTitle').innerText = title;
+            document.getElementById('videoIframe').src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1`;
+            document.getElementById('videoModal').classList.remove('hidden');
+        }
+
+        function closeVideoModal(e) {
+            if (!e || e.target.id === 'videoModal' || e.currentTarget.tagName === 'BUTTON') {
+                document.getElementById('videoIframe').src = '';
+                document.getElementById('videoModal').classList.add('hidden');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
